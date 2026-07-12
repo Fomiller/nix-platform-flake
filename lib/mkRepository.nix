@@ -5,7 +5,7 @@ let
   lang = import ./templates/language.nix { inherit (repoConfig) language; };
   header = import ./header.nix { };
 
-  workflowFiles = import ./templates/workflows.nix { inherit repoConfig lang header; };
+  workflowFiles = import ./templates/workflows.nix { inherit repoConfig lang header lib; };
   dockerfile = import ./templates/dockerfile.nix { inherit lang header; };
   justfileContent = import ./templates/justfile.nix { inherit lang header; };
   renovateContent = import ./templates/renovate.nix { inherit repoConfig; };
