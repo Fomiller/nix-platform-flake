@@ -26,6 +26,10 @@ let
       push:
         branches: [main]
 
+    concurrency:
+      group: ''${{ github.workflow }}-''${{ github.ref }}
+      cancel-in-progress: true
+
     jobs:
       build-test:
         runs-on: ubuntu-latest
