@@ -1,5 +1,11 @@
 # Mirrors the existing promotion model described in FOM-51's background:
 # Helm charts -> ECR -> Kargo promotion -> platform config repo -> Renovate.
+#
+# Two independent toggles (repoConfig.kubernetes.helm / .argocd), each
+# contributing its own file set — a repo can have a Helm chart without an
+# ArgoCD Application (not yet deployed via GitOps) or vice versa. The
+# go-service example has both on; rust-service has only helm, which is why
+# rust-service has no deploy/ directory.
 { repoConfig, header }:
 let
   k8s = repoConfig.kubernetes or {};
@@ -13,6 +19,10 @@ let
     appVersion: "1.0.0"
   '';
 
+  # <ECR_REGISTRY> is intentionally left as a literal placeholder — the
+  # real registry URL is environment-specific and belongs in whatever
+  # values overlay/Helm --set the deploy pipeline applies, not baked into
+  # a platform-generated file that's identical across environments.
   valuesYaml = ''
     ${header}
     image:
@@ -22,6 +32,9 @@ let
     replicaCount: 1
   '';
 
+  # Same idea: <PLATFORM_CONFIG_REPO_URL> is a stand-in for wherever the
+  # org's actual platform-config repo (the one Kargo promotes into, per
+  # the ticket's background) ends up living.
   argocdApplicationYaml = ''
     ${header}
     apiVersion: argoproj.io/v1alpha1

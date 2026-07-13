@@ -1,3 +1,8 @@
+# Generates .github/workflows/{ci,security,release}.yml. ci.yml is always
+# emitted; security.yml and release.yml are only emitted when repo.nix
+# opts in via `ci.security`/`ci.release` — this is the "declarative"
+# lever mkRepository's example in the ticket shows (`ci = { security =
+# true; release = true; }`).
 { repoConfig, lang, header, lib }:
 let
   # Nix multi-line strings are dedented at each literal's own definition
@@ -11,6 +16,9 @@ let
     in
       lib.concatStringsSep "\n" (map (l: if l == "" then l else pad + l) lines);
 
+  # Both ci.yml and release.yml nest lang.setupStep six spaces deep, under
+  # `jobs.<name>.steps:` — computed once and reused so the two workflows
+  # can't drift on indentation.
   setupStepAt6 = indent 6 lang.setupStep;
 
   ci = repoConfig.ci or {};
@@ -44,6 +52,9 @@ let
             run: ${lang.lintCmd}
   '';
 
+  # Not language-specific (a filesystem/dependency scan works the same for
+  # any archetype), so unlike ciYml/releaseYml it doesn't touch `lang` at
+  # all.
   securityYml = ''
     ${header}
     name: Security
@@ -92,6 +103,11 @@ let
   # workflow." It is NOT emitted by the platform flake — see repos/*/.github
   # for the checked-in version.
 in
+  # ci.yml is unconditional; security.yml/release.yml are spliced in only
+  # when repo.nix asks for them — this is how a single mkRepository call
+  # ends up producing a different file set for go-service (both) vs
+  # rust-service (security only). `//` merge with `{}` is a no-op when the
+  # toggle is off.
   { ".github/workflows/ci.yml" = ciYml; }
   // (if wantSecurity then { ".github/workflows/security.yml" = securityYml; } else {})
   // (if wantRelease then { ".github/workflows/release.yml" = releaseYml; } else {})
