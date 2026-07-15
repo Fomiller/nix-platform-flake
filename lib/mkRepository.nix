@@ -15,7 +15,22 @@ let
   # Resolve this repo's language archetype (build/test/lint commands, base
   # images, etc — see templates/language.nix) and the shared "do not edit"
   # banner every generated file gets prefixed with.
-  lang = import ./templates/language.nix { inherit (repoConfig) language; };
+  langBase = import ./templates/language.nix { inherit (repoConfig) language; };
+
+  # Per-repo escape hatch (see repo.nix's `overrides.language`): overrides
+  # any single archetype field — e.g. a newer buildImage — without waiting
+  # on a platform release. `//` is right-biased so an override always wins.
+  # `dockerBuild` is deliberately computed *after* the merge, from the
+  # merged buildImage/runtimeImage, so an image override cascades into the
+  # generated Dockerfile instead of silently missing it (a plain `//` over
+  # a pre-baked dockerBuild string could not do this).
+  langOverrides = repoConfig.overrides.language or { };
+  langMerged = langBase // langOverrides;
+  lang = langMerged // {
+    dockerBuild = langOverrides.dockerBuild or
+      (langBase.mkDockerBuild { inherit (langMerged) buildImage runtimeImage; });
+  };
+
   header = import ./header.nix { };
 
   # Each template module is a pure function: (repoConfig/lang/header) -> an

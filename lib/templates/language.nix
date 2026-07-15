@@ -8,11 +8,7 @@
 { language }:
 let
   archetypes = {
-    # `rec` so dockerBuild can reference buildImage/runtimeImage below
-    # instead of duplicating the version string — bumping a Go version is
-    # then a one-line change that lands in both setupStep's implied
-    # toolchain and the Dockerfile.
-    go = rec {
+    go = {
       buildImage = "golang:1.23";
       runtimeImage = "gcr.io/distroless/static-debian12";
 
@@ -31,8 +27,12 @@ let
       testCmd = "go test ./... -race -cover";
       lintCmd = "go vet ./...";
 
-      # The generated Dockerfile's entire body (see dockerfile.nix).
-      dockerBuild = ''
+      # A function of the (possibly repo-overridden) images, not a
+      # pre-baked string: mkRepository.nix calls this *after* merging
+      # repoConfig.overrides.language, so overriding buildImage/runtimeImage
+      # actually changes the emitted Dockerfile instead of the override
+      # missing a value that was already baked in here.
+      mkDockerBuild = { buildImage, runtimeImage }: ''
         FROM ${buildImage} AS build
         WORKDIR /src
         COPY go.mod go.sum ./
@@ -45,7 +45,7 @@ let
         ENTRYPOINT ["/app"]'';
     };
 
-    rust = rec {
+    rust = {
       buildImage = "rust:1.82";
       runtimeImage = "gcr.io/distroless/cc-debian12";
       setupStep = ''
@@ -53,7 +53,7 @@ let
       buildCmd = "cargo build --release";
       testCmd = "cargo test --all-features";
       lintCmd = "cargo clippy -- -D warnings";
-      dockerBuild = ''
+      mkDockerBuild = { buildImage, runtimeImage }: ''
         FROM ${buildImage} AS build
         WORKDIR /src
         COPY . .

@@ -25,6 +25,16 @@ let
   wantSecurity = ci.security or false;
   wantRelease = ci.release or false;
 
+  # repo.nix's `ci.extraSteps` escape hatch: a list of already-formatted
+  # step strings (same "- name: ... flush at column 0" shape as
+  # lang.setupStep) appended to build-test's step list. Only extends the
+  # one step list the platform anticipated extending — a new job, trigger,
+  # or matrix strategy still needs a dedicated field or the ci.custom
+  # whole-file escape hatch, not this one.
+  extraSteps = ci.extraSteps or [];
+  extraStepsAt6 = lib.optionalString (extraSteps != [])
+    ("\n" + indent 6 (lib.concatStringsSep "\n" extraSteps));
+
   ciYml = ''
     ${header}
     name: CI
@@ -49,7 +59,7 @@ let
           - name: test
             run: ${lang.testCmd}
           - name: lint
-            run: ${lang.lintCmd}
+            run: ${lang.lintCmd}${extraStepsAt6}
   '';
 
   # Not language-specific (a filesystem/dependency scan works the same for
