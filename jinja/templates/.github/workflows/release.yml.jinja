@@ -1,0 +1,19 @@
+{% if ci.release %}
+{% include "_header.jinja" %}
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+{{ lang.setupStep | indent(6, true) }}
+      - name: build release artifact
+        run: {{ lang.buildCmd }}
+      - name: publish
+        uses: softprops/action-gh-release@v2
+{% endif %}
