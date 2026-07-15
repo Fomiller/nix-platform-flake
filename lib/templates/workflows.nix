@@ -2,7 +2,11 @@
 # emitted; security.yml and release.yml are only emitted when repo.nix
 # opts in via `ci.security`/`ci.release` — this is the "declarative"
 # lever mkRepository's example in the ticket shows (`ci = { security =
-# true; release = true; }`).
+# true; release = true; }`). repo.nix can also splice extra steps into
+# ci.yml's build-test job via `ci.extraSteps = { pre = [...]; post = [...]; }`
+# without a platform release, per the ticket's "Customization should happen
+# through the repository definition ... rather than modifying generated
+# output directly."
 { repoConfig, lang, header, lib }:
 let
   # Nix multi-line strings are dedented at each literal's own definition
@@ -25,15 +29,23 @@ let
   wantSecurity = ci.security or false;
   wantRelease = ci.release or false;
 
-  # repo.nix's `ci.extraSteps` escape hatch: a list of already-formatted
-  # step strings (same "- name: ... flush at column 0" shape as
-  # lang.setupStep) appended to build-test's step list. Only extends the
-  # one step list the platform anticipated extending — a new job, trigger,
-  # or matrix strategy still needs a dedicated field or the ci.custom
-  # whole-file escape hatch, not this one.
-  extraSteps = ci.extraSteps or [];
-  extraStepsAt6 = lib.optionalString (extraSteps != [])
-    ("\n" + indent 6 (lib.concatStringsSep "\n" extraSteps));
+  # repo.nix's `ci.extraSteps` escape hatch: lists of already-formatted step
+  # strings (same "- name: ... flush at column 0" shape as lang.setupStep)
+  # spliced into build-test's step list at two fixed points — `pre` right
+  # after checkout (before the language setup/build/test/lint steps, for
+  # things like restoring a cache or fetching secrets those steps need),
+  # `post` after lint (for things like notifications or artifact upload
+  # that only make sense once build-test has actually run). Only extends
+  # the one step list the platform anticipated extending — a new job,
+  # trigger, or matrix strategy still needs a dedicated field or the
+  # ci.custom whole-file escape hatch, not this one.
+  extraStepsCfg = ci.extraSteps or {};
+  preSteps = extraStepsCfg.pre or [];
+  postSteps = extraStepsCfg.post or [];
+  preStepsAt6 = lib.optionalString (preSteps != [])
+    ("\n" + indent 6 (lib.concatStringsSep "\n" preSteps));
+  postStepsAt6 = lib.optionalString (postSteps != [])
+    ("\n" + indent 6 (lib.concatStringsSep "\n" postSteps));
 
   ciYml = ''
     ${header}
@@ -52,14 +64,14 @@ let
       build-test:
         runs-on: ubuntu-latest
         steps:
-          - uses: actions/checkout@v4
+          - uses: actions/checkout@v4${preStepsAt6}
     ${setupStepAt6}
           - name: build
             run: ${lang.buildCmd}
           - name: test
             run: ${lang.testCmd}
           - name: lint
-            run: ${lang.lintCmd}${extraStepsAt6}
+            run: ${lang.lintCmd}${postStepsAt6}
   '';
 
   # Not language-specific (a filesystem/dependency scan works the same for
