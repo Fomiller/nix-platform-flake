@@ -90,9 +90,12 @@ type templateData struct {
 	Lang langArchetype
 }
 
-// files maps output path -> template path. Intentionally small: this is
-// a scaffold, not full parity with the raw-Nix-string flake yet.
-var files = map[string]string{
+// baseFiles maps output path -> template path for files always emitted.
+// security.yml/release.yml are added conditionally in main(), same
+// "orchestration layer decides which files exist" style as raw-nix's
+// workflows.nix (`{ ... } // (if wantSecurity then {...} else {})`) —
+// unlike jinja/, where each template gates its own emission internally.
+var baseFiles = map[string]string{
 	"Dockerfile":               "templates/dockerfile.tmpl",
 	"CODEOWNERS":               "templates/codeowners.tmpl",
 	".github/workflows/ci.yml": "templates/ci.yml.tmpl",
@@ -150,6 +153,17 @@ func main() {
 	must(err)
 
 	data := templateData{repoConfig: cfg, Lang: lang}
+
+	files := make(map[string]string, len(baseFiles)+2)
+	for outPath, tmplPath := range baseFiles {
+		files[outPath] = tmplPath
+	}
+	if cfg.CI.Security {
+		files[".github/workflows/security.yml"] = "templates/security.yml.tmpl"
+	}
+	if cfg.CI.Release {
+		files[".github/workflows/release.yml"] = "templates/release.yml.tmpl"
+	}
 
 	for outPath, tmplPath := range files {
 		body := render(tmplPath, data)
