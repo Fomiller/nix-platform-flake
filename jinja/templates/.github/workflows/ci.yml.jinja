@@ -1,0 +1,30 @@
+{% include "_header.jinja" %}
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+{% for step in ci.extraSteps.pre %}
+[[ step | indent(6, true) ]]
+{% endfor %}
+[[ lang.setupStep | indent(6, true) ]]
+      - name: build
+        run: [[ lang.buildCmd ]]
+      - name: test
+        run: [[ lang.testCmd ]]
+      - name: lint
+        run: [[ lang.lintCmd ]]
+{% for step in ci.extraSteps.post %}
+[[ step | indent(6, true) ]]
+{% endfor %}
