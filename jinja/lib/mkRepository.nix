@@ -57,9 +57,7 @@ let
         -i ${../templates} \
         -o "$out" \
         -d ${templateData} \
-        --exclude-pattern '_*' \
-        --delimiter-variable-start '[[' \
-        --delimiter-variable-end ']]'
+        --exclude-pattern '_*'
     '';
 
   # Same cp pattern as the other two flakes' generateApp.

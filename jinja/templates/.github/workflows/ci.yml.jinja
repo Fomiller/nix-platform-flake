@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: {% raw %}${{ github.workflow }}-${{ github.ref }}{% endraw +%}
   cancel-in-progress: true
 
 jobs:
@@ -16,15 +16,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 {% for step in ci.extraSteps.pre %}
-[[ step | indent(6, true) ]]
+{{ step | indent(6, true) }}
 {% endfor %}
-[[ lang.setupStep | indent(6, true) ]]
+{{ lang.setupStep | indent(6, true) }}
       - name: build
-        run: [[ lang.buildCmd ]]
+        run: {{ lang.buildCmd }}
       - name: test
-        run: [[ lang.testCmd ]]
+        run: {{ lang.testCmd }}
       - name: lint
-        run: [[ lang.lintCmd ]]
+        run: {{ lang.lintCmd }}
 {% for step in ci.extraSteps.post %}
-[[ step | indent(6, true) ]]
+{{ step | indent(6, true) }}
 {% endfor %}

@@ -27,17 +27,21 @@ discovers `*.jinja` files itself.
 
 ## Notable differences from the other two flakes
 
-- **No custom code for the delimiter collision.** GitHub Actions'
-  `${{ ... }}` only collides with Jinja's *variable* delimiter (`{{ }}`),
-  not its block (`{% %}`) or comment (`{# #}`) delimiters — so
-  `lib/mkRepository.nix` only overrides
-  `--delimiter-variable-start`/`--delimiter-variable-end` to `[[`/`]]`,
-  leaving `{% if %}`/`{% for %}` untouched. More surgical than
-  go-templates' single `.Delims()` call, which had to move every action's
-  delimiters at once because Go's text/template only has one delimiter
-  pair, not a separate one per construct.
+- **The GitHub Actions `${{ ... }}` collision doesn't need custom
+  delimiters at all.** First pass used `--delimiter-variable-start
+  '[['`/`--delimiter-variable-end ']]'` (like go-templates' `.Delims()`),
+  but that's non-standard Jinja — templates stop being renderable by any
+  other Jinja tooling without also knowing the custom delimiters. Switched
+  to plain Jinja's `{% raw %}...{% endraw %}` block instead (see
+  `templates/.github/workflows/ci.yml.jinja`'s `concurrency:` line), which
+  keeps `{{ }}`/`{% %}` fully standard everywhere. One real gotcha hit
+  along the way: makejinja's default `trim_blocks` strips the newline
+  right after a block tag, so `{% endraw %}` immediately followed by a
+  newline silently merged the next YAML line onto the same line — fixed
+  with Jinja's `+` whitespace-control modifier (`{% endraw +%}`), which
+  explicitly disables trim for that one tag.
 - **No hand-rolled `indent` helper.** Jinja ships an `indent(width, first)`
-  filter — `[[ step | indent(6, true) ]]` — unlike the raw-Nix flake's
+  filter — `{{ step | indent(6, true) }}` — unlike the raw-Nix flake's
   custom `indent` function in `workflows.nix` or go-templates' equivalent
   `template.FuncMap` entry in `main.go`.
 - **Whole-directory-tree rendering is built in.** `makejinja -i templates
