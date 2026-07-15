@@ -8,22 +8,30 @@ of raw Nix strings or a compiled Go program. Same
 `lib.mkRepository = pkgs: repoConfig: { filesDrv; generateApp; }`
 interface as the other two.
 
-## Implemented (scaffold)
+## Implemented
 
 - `Dockerfile` — per-language build, with `overrides.language.buildImage`/
   `runtimeImage` support.
 - `.github/workflows/ci.yml` — including `ci.extraSteps.pre`/`.post`.
+- `.github/workflows/security.yml` — gated on `ci.security`.
+- `.github/workflows/release.yml` — gated on `ci.release`.
 - `CODEOWNERS`.
 
-Same scope as `../go-templates/`, for a direct comparison.
+`security.yml`/`release.yml` are wrapped in `{% if ci.security %}`/
+`{% if ci.release %}` around the *entire* file body (header include
+included), relying on makejinja's default behavior of not copying a file
+that rendered empty — confirmed via its own `Skip empty file` log line.
+No `lib/mkRepository.nix` changes were needed for either: unlike
+`raw-nix/`'s `wantSecurity`/`wantRelease` `//`-merge in `workflows.nix` or
+go-templates' `files` map, the toggle lives entirely inside the template.
 
 ## Not yet ported
 
-`security.yml`, `release.yml`, `justfile`, `renovate.json`, kubernetes
-manifests — add a `<name>.jinja` under `templates/` (mirroring the output
-path relative to `templates/`) and it follows the same pattern as the
-three above; no changes to `lib/mkRepository.nix` needed, since makejinja
-discovers `*.jinja` files itself.
+`justfile`, `renovate.json`, kubernetes manifests — add a `<name>.jinja`
+under `templates/` (mirroring the output path relative to `templates/`)
+and it follows the same pattern as the files above; no changes to
+`lib/mkRepository.nix` needed, since makejinja discovers `*.jinja` files
+itself.
 
 ## Notable differences from the other two flakes
 
