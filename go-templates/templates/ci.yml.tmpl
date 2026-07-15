@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+[[- range .CI.ExtraSteps.Pre ]]
+[[ indent 6 . ]]
+[[- end ]]
+[[ indent 6 .Lang.SetupStep ]]
+      - name: build
+        run: [[ .Lang.BuildCmd ]]
+      - name: test
+        run: [[ .Lang.TestCmd ]]
+      - name: lint
+        run: [[ .Lang.LintCmd ]]
+[[- range .CI.ExtraSteps.Post ]]
+[[ indent 6 . ]]
+[[- end ]]
