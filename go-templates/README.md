@@ -1,6 +1,6 @@
 # go-templates (FOM-52)
 
-Exploratory second flake, independent of `../flake.nix`, generating the
+Exploratory second flake, independent of `../raw-nix/flake.nix`, generating the
 same kind of golden files via Go's `text/template` instead of raw Nix
 strings. Same `lib.mkRepository = pkgs: repoConfig: { filesDrv; generateApp; }`
 interface, so a consuming repo can point `platform.url` at either flake
@@ -28,7 +28,7 @@ Templates use `[[ ]]` as the action delimiter (set via `.Delims("[[",
 GitHub Actions' own `${{ ... }}` expressions verbatim — see
 `templates/ci.yml.tmpl`'s `concurrency:` block. The raw-Nix flake has to
 work around the same collision with a quoted heredoc delimiter
-(`'PLATFORM_GENERATED_EOF'`) in `../lib/mkRepository.nix`.
+(`'PLATFORM_GENERATED_EOF'`) in `../raw-nix/lib/mkRepository.nix`.
 
 There is no eval-time `files` (path -> content) attrset here, unlike the
 raw-Nix flake's `mkRepository.nix` — content only exists once the Go

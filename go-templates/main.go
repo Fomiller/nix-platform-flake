@@ -39,7 +39,7 @@ type overridesConfig struct {
 	Language languageOverride `json:"language"`
 }
 
-// repoConfig mirrors repo.nix's shape (see ../lib/mkRepository.nix's
+// repoConfig mirrors repo.nix's shape (see ../raw-nix/lib/mkRepository.nix's
 // raw-Nix-string counterpart). Only the fields the scaffolded templates
 // actually use are here — kubernetes/renovate/justfile fields aren't
 // wired up yet (see README.md).

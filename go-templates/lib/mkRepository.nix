@@ -1,4 +1,4 @@
-# Go-templating variant of ../../lib/mkRepository.nix (FOM-52). Same
+# Go-templating variant of ../../raw-nix/lib/mkRepository.nix (FOM-52). Same
 # repoConfig -> { filesDrv; generateApp; } shape as the raw-Nix-string
 # flake, but instead of heredoc strings, repoConfig is serialized to JSON
 # and handed to a compiled Go program that renders text/template files.
